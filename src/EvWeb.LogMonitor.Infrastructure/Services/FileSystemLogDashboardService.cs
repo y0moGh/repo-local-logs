@@ -71,8 +71,8 @@ public class FileSystemLogDashboardService : ILogDashboardService
             TextFilter = query.Text,
             SelectedDateFrom = NormalizeFilterValue(query.DateFrom),
             SelectedDateTo = NormalizeFilterValue(query.DateTo),
-            SelectedTimeFrom = TryParseHourMinute(NormalizeFilterValue(query.TimeFrom), out var queryTimeFrom) ? queryTimeFrom : null,
-            SelectedTimeTo = TryParseHourMinute(NormalizeFilterValue(query.TimeTo), out var queryTimeTo) ? queryTimeTo : null,
+            SelectedTimeFrom = TryParseHourMinute(NormalizeTimeFilterValue(query.TimeFrom), out var queryTimeFrom) ? queryTimeFrom : null,
+            SelectedTimeTo = TryParseHourMinute(NormalizeTimeFilterValue(query.TimeTo), out var queryTimeTo) ? queryTimeTo : null,
             SelectedAssociation = NormalizeFilterValue(query.Association),
             SelectedLogType = NormalizeLogTypeFilter(query.LogType),
             MaxLines = NormalizeMaxLines(query.MaxLines),
@@ -445,6 +445,23 @@ public class FileSystemLogDashboardService : ILogDashboardService
         }
 
         return NormalizeLogType(value) ?? (value.Equals("Sin tipo", StringComparison.OrdinalIgnoreCase) ? "Sin tipo" : null);
+    }
+
+    private static string? NormalizeTimeFilterValue(string? value)
+    {
+        var normalized = NormalizeFilterValue(value);
+        if (string.IsNullOrWhiteSpace(normalized))
+        {
+            return null;
+        }
+
+        if (normalized.Equals("Now", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals("Ahora", StringComparison.OrdinalIgnoreCase))
+        {
+            return TimeOnly.FromDateTime(DateTime.Now).ToString("HH:mm");
+        }
+
+        return normalized;
     }
 
     private static string? TryExtractLogType(string line)
