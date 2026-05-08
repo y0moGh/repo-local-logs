@@ -71,8 +71,8 @@ public class FileSystemLogDashboardService : ILogDashboardService
             TextFilter = query.Text,
             SelectedDateFrom = NormalizeFilterValue(query.DateFrom),
             SelectedDateTo = NormalizeFilterValue(query.DateTo),
-            SelectedTimeFrom = NormalizeFilterValue(query.TimeFrom),
-            SelectedTimeTo = NormalizeFilterValue(query.TimeTo),
+            SelectedTimeFrom = TryParseHourMinute(NormalizeFilterValue(query.TimeFrom), out var queryTimeFrom) ? queryTimeFrom : null,
+            SelectedTimeTo = TryParseHourMinute(NormalizeFilterValue(query.TimeTo), out var queryTimeTo) ? queryTimeTo : null,
             SelectedAssociation = NormalizeFilterValue(query.Association),
             SelectedLogType = NormalizeLogTypeFilter(query.LogType),
             MaxLines = NormalizeMaxLines(query.MaxLines),
@@ -168,23 +168,14 @@ public class FileSystemLogDashboardService : ILogDashboardService
                 model.SelectedDateTo = selectedDateTo.Value.ToString("yyyy-MM-dd");
             }
 
-            if (!TryParseHourMinute(model.SelectedTimeFrom, out var selectedTimeFrom))
-            {
-                model.SelectedTimeFrom = null;
-                selectedTimeFrom = null;
-            }
-
-            if (!TryParseHourMinute(model.SelectedTimeTo, out var selectedTimeTo))
-            {
-                model.SelectedTimeTo = null;
-                selectedTimeTo = null;
-            }
+            var selectedTimeFrom = model.SelectedTimeFrom;
+            var selectedTimeTo = model.SelectedTimeTo;
 
             if (selectedTimeFrom.HasValue && selectedTimeTo.HasValue && selectedTimeFrom > selectedTimeTo)
             {
                 (selectedTimeFrom, selectedTimeTo) = (selectedTimeTo, selectedTimeFrom);
-                model.SelectedTimeFrom = selectedTimeFrom.Value.ToString(@"hh\:mm");
-                model.SelectedTimeTo = selectedTimeTo.Value.ToString(@"hh\:mm");
+                model.SelectedTimeFrom = selectedTimeFrom;
+                model.SelectedTimeTo = selectedTimeTo;
             }
 
             if (!string.IsNullOrWhiteSpace(model.SelectedAssociation)
