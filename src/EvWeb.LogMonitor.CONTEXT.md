@@ -584,6 +584,7 @@ Estado de carga:
 - Carpetas reales en disco: `errors`, `info`, `warnings`, `legacy`
 - Filtro `Fecha`: calendarios `Desde` y `Hasta` sobre fecha de creacion del archivo
 - Filtro `Hora`: campos `Desde` y `Hasta` sobre la hora de cada linea (sin segundos)
+- Filtro `Hora`: opcion `Clear`/`Limpiar` para resetear ambos campos y mostrar todas las lineas sin filtrar por hora
 - Filtro `Asociacion`: dropdown con opcion `Todos`
 - Filtro `Tipo de log`: dropdown con `Todos`, `Errors`, `Warnings`, `Info`, `Sin tipo`
 - Ruta por defecto de la app: `Logs/Index`

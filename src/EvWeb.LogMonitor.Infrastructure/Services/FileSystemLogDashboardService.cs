@@ -430,6 +430,8 @@ public class FileSystemLogDashboardService : ILogDashboardService
         }
 
         return value.Equals("Todos", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("Clear", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("Limpiar", StringComparison.OrdinalIgnoreCase)
             ? null
             : value.Trim();
     }
