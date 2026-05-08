@@ -21,12 +21,14 @@ public class LogsController : Controller
         string? text,
         string? dateFrom,
         string? dateTo,
+        string? timeFrom,
+        string? timeTo,
         string? association,
         string? logType,
         int maxLines = 500)
     {
         ViewData["Title"] = "Logs";
-        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, association, logType, maxLines);
+        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, timeFrom, timeTo, association, logType, maxLines);
 
         return View(model);
     }
@@ -39,11 +41,13 @@ public class LogsController : Controller
         string? text,
         string? dateFrom,
         string? dateTo,
+        string? timeFrom,
+        string? timeTo,
         string? association,
         string? logType,
         int maxLines = 500)
     {
-        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, association, logType, maxLines);
+        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, timeFrom, timeTo, association, logType, maxLines);
         return PartialView("_DashboardContent", model);
     }
 
@@ -55,12 +59,14 @@ public class LogsController : Controller
         string? text,
         string? dateFrom,
         string? dateTo,
+        string? timeFrom,
+        string? timeTo,
         string? association,
         string? logType,
         int maxLines = 500,
         int offset = 0)
     {
-        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, association, logType, maxLines, offset);
+        var model = await BuildViewModelAsync(source, folder, file, text, dateFrom, dateTo, timeFrom, timeTo, association, logType, maxLines, offset);
         return PartialView("_LogLineBatch", model);
     }
 
@@ -83,6 +89,8 @@ public class LogsController : Controller
         string? text,
         string? dateFrom,
         string? dateTo,
+        string? timeFrom,
+        string? timeTo,
         string? association,
         string? logType,
         int maxLines,
@@ -96,6 +104,8 @@ public class LogsController : Controller
             Text = text,
             DateFrom = dateFrom,
             DateTo = dateTo,
+            TimeFrom = timeFrom,
+            TimeTo = timeTo,
             Association = association,
             LogType = logType,
             MaxLines = maxLines,

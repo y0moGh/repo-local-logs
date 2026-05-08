@@ -16,6 +16,8 @@ public class LogDashboardViewModel
     public string? TextFilter { get; set; }
     public string? SelectedDateFrom { get; set; }
     public string? SelectedDateTo { get; set; }
+    public string? SelectedTimeFrom { get; set; }
+    public string? SelectedTimeTo { get; set; }
     public string? SelectedAssociation { get; set; }
     public string? SelectedLogType { get; set; }
     public int MaxLines { get; set; } = 500;

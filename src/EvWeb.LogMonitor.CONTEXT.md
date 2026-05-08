@@ -24,7 +24,8 @@ La UI muestra un dashboard con:
 - Tabs por aplicacion
 - Selector de carpeta (`Errors`, `Info`, `Warnings`, `Legacy`)
 - Selector de archivo
-- Selector de fecha desde/hasta
+- Selector de fecha desde/hasta (aplicado a fecha de creacion de archivos disponibles)
+- Selector de hora desde/hasta (aplicado a lineas del archivo, ignorando segundos)
 - Selector de asociacion medica
 - Selector de tipo de log
 - Filtro por texto
@@ -581,7 +582,8 @@ Estado de carga:
 - Tabs de fuentes: `Web`, `Api`, `Servicio`
 - Carpetas visibles: `Errors`, `Info`, `Warnings`, `Legacy`
 - Carpetas reales en disco: `errors`, `info`, `warnings`, `legacy`
-- Filtro `Fecha`: calendarios `Desde` y `Hasta`
+- Filtro `Fecha`: calendarios `Desde` y `Hasta` sobre fecha de creacion del archivo
+- Filtro `Hora`: campos `Desde` y `Hasta` sobre la hora de cada linea (sin segundos)
 - Filtro `Asociacion`: dropdown con opcion `Todos`
 - Filtro `Tipo de log`: dropdown con `Todos`, `Errors`, `Warnings`, `Info`, `Sin tipo`
 - Ruta por defecto de la app: `Logs/Index`
@@ -643,7 +645,7 @@ Cambios que probablemente se pidan mas adelante y donde impactarian:
 ## 19. Ultima actualizacion importante
 
 Fecha de referencia:
-- `2026-05-04`
+- `2026-05-08`
 
 Cambio documentado:
 - Se refino el flujo AJAX para que solo actualice el visor del archivo usando el endpoint `Logs/Dashboard`, el partial `_LogViewer.cshtml` y una firma de contenido para evitar reemplazos visuales innecesarios.

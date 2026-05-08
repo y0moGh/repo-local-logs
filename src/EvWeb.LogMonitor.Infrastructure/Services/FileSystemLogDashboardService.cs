@@ -27,6 +27,9 @@ public class FileSystemLogDashboardService : ILogDashboardService
     private static readonly Regex BracketLineRegex = new(
         @"^\[\s*(?<category>[^|\]]+)\|\s*(?<ts>[^\]]+)\]\s*(?<message>.+)$",
         RegexOptions.Compiled);
+    private static readonly Regex TimeInBracketRegex = new(
+        @"^\[\s*(?:(?<association>[^|\]]+)\|\s*)?(?<time>\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)\s*\]",
+        RegexOptions.Compiled);
 
     private static readonly Regex TypeTokenRegex = new(
         @"Type\s*:\s*(?<type>[A-Za-z]+)",
@@ -53,7 +56,8 @@ public class FileSystemLogDashboardService : ILogDashboardService
         var availableFolders = GetAvailableFolders(selectedSource.Path);
         var selectedFolder = ResolveSelectedFolder(query.Folder, availableFolders);
         var folderPath = GetFolderPath(selectedSource.Path, selectedFolder);
-        var availableFiles = await GetAvailableFilesAsync(folderPath);
+        var allAvailableFiles = await GetAvailableFilesAsync(folderPath);
+        var availableFiles = ApplyFileDateFilters(allAvailableFiles, query.DateFrom, query.DateTo);
 
         var model = new LogDashboardViewModel
         {
@@ -67,6 +71,8 @@ public class FileSystemLogDashboardService : ILogDashboardService
             TextFilter = query.Text,
             SelectedDateFrom = NormalizeFilterValue(query.DateFrom),
             SelectedDateTo = NormalizeFilterValue(query.DateTo),
+            SelectedTimeFrom = NormalizeFilterValue(query.TimeFrom),
+            SelectedTimeTo = NormalizeFilterValue(query.TimeTo),
             SelectedAssociation = NormalizeFilterValue(query.Association),
             SelectedLogType = NormalizeLogTypeFilter(query.LogType),
             MaxLines = NormalizeMaxLines(query.MaxLines),
@@ -162,6 +168,25 @@ public class FileSystemLogDashboardService : ILogDashboardService
                 model.SelectedDateTo = selectedDateTo.Value.ToString("yyyy-MM-dd");
             }
 
+            if (!TryParseHourMinute(model.SelectedTimeFrom, out var selectedTimeFrom))
+            {
+                model.SelectedTimeFrom = null;
+                selectedTimeFrom = null;
+            }
+
+            if (!TryParseHourMinute(model.SelectedTimeTo, out var selectedTimeTo))
+            {
+                model.SelectedTimeTo = null;
+                selectedTimeTo = null;
+            }
+
+            if (selectedTimeFrom.HasValue && selectedTimeTo.HasValue && selectedTimeFrom > selectedTimeTo)
+            {
+                (selectedTimeFrom, selectedTimeTo) = (selectedTimeTo, selectedTimeFrom);
+                model.SelectedTimeFrom = selectedTimeFrom.Value.ToString(@"hh\:mm");
+                model.SelectedTimeTo = selectedTimeTo.Value.ToString(@"hh\:mm");
+            }
+
             if (!string.IsNullOrWhiteSpace(model.SelectedAssociation)
                 && !model.AvailableAssociations.Contains(model.SelectedAssociation, StringComparer.OrdinalIgnoreCase))
             {
@@ -178,6 +203,7 @@ public class FileSystemLogDashboardService : ILogDashboardService
                 .Where(entry => string.IsNullOrWhiteSpace(model.TextFilter)
                     || entry.RawLine.Contains(model.TextFilter, StringComparison.OrdinalIgnoreCase))
                 .Where(entry => IsInDateRange(entry, selectedDateFrom, selectedDateTo))
+                .Where(entry => IsInTimeRange(entry, selectedTimeFrom, selectedTimeTo))
                 .Where(entry => string.IsNullOrWhiteSpace(model.SelectedAssociation)
                     || entry.Association.Equals(model.SelectedAssociation, StringComparison.OrdinalIgnoreCase))
                 .Where(entry => MatchesLogType(entry, model.SelectedLogType))
@@ -513,6 +539,111 @@ public class FileSystemLogDashboardService : ILogDashboardService
         }
 
         return true;
+    }
+
+    private static List<LogFileDescriptor> ApplyFileDateFilters(List<LogFileDescriptor> files, string? dateFromFilter, string? dateToFilter)
+    {
+        TryParseDateOnly(NormalizeFilterValue(dateFromFilter), out var dateFrom);
+        TryParseDateOnly(NormalizeFilterValue(dateToFilter), out var dateTo);
+
+        if (dateFrom.HasValue && dateTo.HasValue && dateFrom > dateTo)
+        {
+            (dateFrom, dateTo) = (dateTo, dateFrom);
+        }
+
+        if (!dateFrom.HasValue && !dateTo.HasValue)
+        {
+            return files;
+        }
+
+        return files
+            .Where(file =>
+            {
+                var creationDate = DateOnly.FromDateTime(file.CreationTime);
+
+                if (dateFrom.HasValue && creationDate < dateFrom.Value)
+                {
+                    return false;
+                }
+
+                if (dateTo.HasValue && creationDate > dateTo.Value)
+                {
+                    return false;
+                }
+
+                return true;
+            })
+            .ToList();
+    }
+
+    private static bool TryParseHourMinute(string? value, out TimeOnly? parsedTime)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            parsedTime = null;
+            return false;
+        }
+
+        if (TimeOnly.TryParseExact(value.Trim(), "HH:mm", out var exactTime)
+            || TimeOnly.TryParse(value.Trim(), out exactTime))
+        {
+            parsedTime = new TimeOnly(exactTime.Hour, exactTime.Minute);
+            return true;
+        }
+
+        parsedTime = null;
+        return false;
+    }
+
+    private static bool IsInTimeRange(LogEntry entry, TimeOnly? from, TimeOnly? to)
+    {
+        if (!from.HasValue && !to.HasValue)
+        {
+            return true;
+        }
+
+        if (!TryExtractEntryHourMinute(entry, out var entryTime))
+        {
+            return false;
+        }
+
+        if (from.HasValue && entryTime < from.Value)
+        {
+            return false;
+        }
+
+        if (to.HasValue && entryTime > to.Value)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryExtractEntryHourMinute(LogEntry entry, out TimeOnly time)
+    {
+        var bracketMatch = TimeInBracketRegex.Match(entry.RawLine);
+        if (bracketMatch.Success
+            && TimeOnly.TryParse(bracketMatch.Groups["time"].Value.Trim(), out var bracketTime))
+        {
+            time = new TimeOnly(bracketTime.Hour, bracketTime.Minute);
+            return true;
+        }
+
+        if (entry.OccurredAt.HasValue)
+        {
+            time = new TimeOnly(entry.OccurredAt.Value.Hour, entry.OccurredAt.Value.Minute);
+            return true;
+        }
+
+        if (TimeOnly.TryParse(entry.Timestamp, out var parsedTime))
+        {
+            time = new TimeOnly(parsedTime.Hour, parsedTime.Minute);
+            return true;
+        }
+
+        time = default;
+        return false;
     }
 
     private static string BuildContentSignature(LogDashboardViewModel model)
